@@ -1,0 +1,27 @@
+{
+  "name": "pius-plan-portal",
+  "private": true,
+  "version": "1.0.0",
+  "description": "PiUS 기획서 포털 — 고객사는 접근 코드로 열람, 관리자는 /admin 에서 관리",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
+    "jose": "^6.2.13",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}

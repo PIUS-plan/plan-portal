@@ -1,0 +1,52 @@
+import Link from 'next/link';
+import { getAdmin } from '@/lib/supabase/server';
+import { date, STATUS } from '@/lib/format';
+
+type Row = {
+  id: string; slug: string; title: string; client_name: string | null; status: string;
+  deployed_at: string | null; view_count: number; last_viewed_at: string | null; active_codes: number;
+};
+
+export default async function PlansPage() {
+  const { supabase } = (await getAdmin())!;
+  const { data, error } = await supabase.from('plan_overview').select('*').order('updated_at', { ascending: false });
+  const plans = (data ?? []) as Row[];
+
+  return (
+    <>
+      <div className="page-head">
+        <h1>기획서</h1>
+        <p className="muted">PIUS-plan 저장소의 main 에 push 하면 여기에 <b>초안</b>으로 자동 등록됩니다.</p>
+      </div>
+      {error && <p className="error">{error.message}</p>}
+      {plans.length === 0 ? (
+        <div className="empty">아직 등록된 기획서가 없습니다.</div>
+      ) : (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>기획서</th><th>고객사</th><th>상태</th><th>최근 배포</th>
+              <th className="num">유효 코드</th><th className="num">열람</th><th>마지막 열람</th>
+            </tr>
+          </thead>
+          <tbody>
+            {plans.map((p) => (
+              <tr key={p.id}>
+                <td>
+                  <Link href={`/admin/plans/${p.id}`} className="strong">{p.title}</Link>
+                  <div className="muted mono">{p.slug}</div>
+                </td>
+                <td>{p.client_name ?? <span className="muted">—</span>}</td>
+                <td><span className={`badge ${p.status}`}>{STATUS[p.status]}</span></td>
+                <td>{date(p.deployed_at)}</td>
+                <td className="num">{p.active_codes}</td>
+                <td className="num">{p.view_count}</td>
+                <td>{date(p.last_viewed_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </>
+  );
+}
