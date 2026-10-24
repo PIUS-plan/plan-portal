@@ -9,6 +9,8 @@
 | `plan-template/` | `PIUS-plan/plan-template` | 새 기획서 저장소 템플릿: `CLAUDE.md`(웹 Claude Code 가 지킬 규칙) + `.gitignore` |
 
 ```
+기획자: claude.ai Project 에서 작성 → zip 내려받기 → /admin/upload 에 올리기
+  → 포털이 PIUS-plan/<slug> 저장소 생성(plan-template) 또는 기존 저장소에 커밋 (lib/github.ts)
 기획서 저장소 main push
   → 조직 웹훅 → 포털 /api/github/webhook (서명 검증)
   → plan-publisher 워크플로 dispatch (repo, sha)
@@ -30,7 +32,7 @@ GitHub Free 조직에서는 비공개 저장소가 조직 시크릿을 못 쓰�
 ### 2. GitHub 토큰 (Fine-grained PAT 1개)
 GitHub → Settings → Developer settings → Fine-grained tokens → Generate
 - Resource owner: **PIUS-plan**, Repository access: **All repositories**
-- Permissions: **Contents: Read**, **Actions: Read and write**
+- Permissions: **Administration: Read and write**(업로드 시 저장소 생성), **Contents: Read and write**(업로드 커밋), **Actions: Read and write**(빌드 실행·상태 조회)
 - 조직 설정에서 승인이 필요하면 PIUS-plan → Settings → Personal access tokens → Pending requests 에서 승인.
 
 ### 3. plan-publisher 저장소 시크릿/변수

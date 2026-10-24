@@ -14,13 +14,16 @@ export default async function PlansPage() {
 
   return (
     <>
-      <div className="page-head">
-        <h1>기획서</h1>
-        <p className="muted">PIUS-plan 저장소의 main 에 push 하면 여기에 <b>초안</b>으로 자동 등록됩니다.</p>
+      <div className="page-head row-head">
+        <div>
+          <h1>기획서</h1>
+          <p className="muted">올린 기획서는 <b>초안</b>으로 등록됩니다. 고객에게 보이려면 <b>공개</b>로 바꾸고 접근 코드를 만드세요.</p>
+        </div>
+        <Link href="/admin/upload" className="button">+ 기획서 올리기</Link>
       </div>
       {error && <p className="error">{error.message}</p>}
       {plans.length === 0 ? (
-        <div className="empty">아직 등록된 기획서가 없습니다.</div>
+        <div className="empty">아직 등록된 기획서가 없습니다. <Link href="/admin/upload">첫 기획서를 올려 보세요.</Link></div>
       ) : (
         <table className="table">
           <thead>

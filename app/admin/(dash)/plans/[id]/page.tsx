@@ -4,12 +4,20 @@ import { getAdmin } from '@/lib/supabase/server';
 import { date, STATUS } from '@/lib/format';
 import { revokeCode, setCurrentVersion, updatePlan } from '../../../actions';
 import NewCodeForm from './NewCodeForm';
+import PublishBanner from './PublishBanner';
 
 type Code = { id: string; code_hint: string; label: string | null; expires_at: string | null; revoked_at: string | null; created_at: string };
 type Log = { id: number; ip: string | null; user_agent: string | null; created_at: string; access_codes: { label: string | null; code_hint: string } | null };
 
-export default async function PlanPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PlanPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ pending?: string; t?: string }>;
+}) {
   const { id } = await params;
+  const { pending, t } = await searchParams;
   const { supabase } = (await getAdmin())!;
 
   const [{ data: plan }, { data: versions }, { data: codes }, { data: logs }] = await Promise.all([
@@ -34,8 +42,13 @@ export default async function PlanPage({ params }: { params: Promise<{ id: strin
           {plan.slug}
           {plan.repo_url && <> · <a href={plan.repo_url} target="_blank" rel="noreferrer">GitHub</a></>}
           {' · '}<a href={`/p/${plan.slug}/`} target="_blank" rel="noreferrer">미리보기</a>
+          {' · '}<Link href={`/admin/upload?plan=${plan.id}`}>수정본 올리기</Link>
         </p>
       </div>
+
+      {pending && /^[0-9a-f]{40}$/.test(pending) && (
+        <PublishBanner slug={plan.slug} since={Number(t) || Date.now() - 30 * 60 * 1000} done={(versions ?? []).some((v) => v.commit_sha === pending)} />
+      )}
 
       <section className="card">
         <h2>기본 정보</h2>

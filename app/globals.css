@@ -118,3 +118,35 @@ button.danger { color: var(--bad); }
   .admin-body { padding: 20px 16px 60px; }
   .admin-body > .table, .card { overflow-x: auto; display: block; }
 }
+
+/* 링크 버튼 */
+a.button {
+  display: inline-flex; align-items: center; height: 38px; padding: 0 16px; border-radius: 8px;
+  background: var(--accent); color: var(--accent-ink); font-weight: 600; text-decoration: none; white-space: nowrap;
+}
+.row-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+
+/* 업로드 */
+.upload-form { display: flex; flex-direction: column; gap: 18px; max-width: 640px; }
+.drop {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  min-height: 140px; padding: 20px; border: 2px dashed var(--line); border-radius: var(--radius);
+  text-align: center; cursor: pointer; background: var(--bg);
+}
+.drop.over { border-color: var(--ink); background: var(--surface); }
+.drop.has { border-style: solid; border-color: var(--ok); background: var(--ok-bg); }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.choice { border: 0; padding: 0; margin: 0; display: flex; gap: 20px; flex-wrap: wrap; }
+.choice legend { font-size: 12px; font-weight: 600; margin-bottom: 8px; padding: 0; }
+.choice label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.choice input { height: auto; }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; }
+.field .hint { font-weight: 400; }
+.slug { display: flex; align-items: center; gap: 6px; }
+.slug input { flex: 1; font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace; }
+
+/* 배포 상태 */
+.banner { padding: 12px 16px; border-radius: var(--radius); margin-bottom: 16px; }
+.banner.ok { background: var(--ok-bg); color: var(--ok); }
+.banner.wait { background: var(--warn-bg); color: var(--warn); }
+.banner.bad { background: var(--bad-bg); color: var(--bad); }
