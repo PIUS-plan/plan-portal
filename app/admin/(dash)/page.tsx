@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getAdmin } from '@/lib/supabase/server';
 import { date, STATUS } from '@/lib/format';
+import { shareUrl, siteOrigin } from '@/lib/site';
+import CopyButton from '../CopyButton';
 
 type Row = {
   id: string; slug: string; title: string; client_name: string | null; status: string;
@@ -9,7 +11,10 @@ type Row = {
 
 export default async function PlansPage() {
   const { supabase } = (await getAdmin())!;
-  const { data, error } = await supabase.from('plan_overview').select('*').order('updated_at', { ascending: false });
+  const [{ data, error }, origin] = await Promise.all([
+    supabase.from('plan_overview').select('*').order('updated_at', { ascending: false }),
+    siteOrigin(),
+  ]);
   const plans = (data ?? []) as Row[];
 
   return (
@@ -29,7 +34,7 @@ export default async function PlansPage() {
           <thead>
             <tr>
               <th>기획서</th><th>고객사</th><th>상태</th><th>최근 배포</th>
-              <th className="num">유효 코드</th><th className="num">열람</th><th>마지막 열람</th>
+              <th className="num">유효 코드</th><th className="num">열람</th><th>마지막 열람</th><th>공유 주소</th>
             </tr>
           </thead>
           <tbody>
@@ -45,6 +50,7 @@ export default async function PlansPage() {
                 <td className="num">{p.active_codes}</td>
                 <td className="num">{p.view_count}</td>
                 <td>{date(p.last_viewed_at)}</td>
+                <td><CopyButton text={shareUrl(origin, p.slug)} label="주소 복사" /></td>
               </tr>
             ))}
           </tbody>

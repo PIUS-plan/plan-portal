@@ -1,12 +1,12 @@
 'use server';
 
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getAdmin, sessionClient } from '@/lib/supabase/server';
 import { generateCode, hashCode, normalizeCode } from '@/lib/viewer';
 import { GitHubError, IGNORED, ORG, commitFiles, createPlanRepo, repoExists } from '@/lib/github';
 import { PlanZipError, parsePlanZip, toSlug } from '@/lib/zip';
+import { siteOrigin } from '@/lib/site';
 
 async function requireAdmin() {
   const admin = await getAdmin();
@@ -84,10 +84,8 @@ export async function createCode(_prev: NewCode, form: FormData): Promise<NewCod
   });
   if (error) return { error: error.message };
 
-  const h = await headers();
-  const origin = process.env.SITE_URL || `${h.get('x-forwarded-proto') ?? 'https'}://${h.get('host')}`;
   revalidatePath(`/admin/plans/${planId}`);
-  return { code, link: `${origin}/c/${code}` };
+  return { code, link: `${await siteOrigin()}/c/${code}` };
 }
 
 export async function revokeCode(form: FormData) {

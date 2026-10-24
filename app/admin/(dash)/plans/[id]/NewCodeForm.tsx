@@ -1,24 +1,8 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState } from 'react';
 import { createCode, type NewCode } from '../../../actions';
-
-function Copy({ text }: { text: string }) {
-  const [done, setDone] = useState(false);
-  return (
-    <button
-      type="button"
-      className="ghost small"
-      onClick={async () => {
-        await navigator.clipboard.writeText(text);
-        setDone(true);
-        setTimeout(() => setDone(false), 1500);
-      }}
-    >
-      {done ? '복사됨' : '복사'}
-    </button>
-  );
-}
+import Copy from '../../../CopyButton';
 
 export default function NewCodeForm({ planId, disabled }: { planId: string; disabled: boolean }) {
   const [state, action, pending] = useActionState<NewCode, FormData>(createCode, {});

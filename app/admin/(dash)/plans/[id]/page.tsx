@@ -5,6 +5,8 @@ import { date, STATUS } from '@/lib/format';
 import { revokeCode, setCurrentVersion, updatePlan } from '../../../actions';
 import NewCodeForm from './NewCodeForm';
 import PublishBanner from './PublishBanner';
+import CopyButton from '../../../CopyButton';
+import { shareUrl, siteOrigin } from '@/lib/site';
 
 type Code = { id: string; code_hint: string; label: string | null; expires_at: string | null; revoked_at: string | null; created_at: string };
 type Log = { id: number; ip: string | null; user_agent: string | null; created_at: string; access_codes: { label: string | null; code_hint: string } | null };
@@ -28,6 +30,7 @@ export default async function PlanPage({
       .order('created_at', { ascending: false }).limit(100),
   ]);
   if (!plan) notFound();
+  const url = shareUrl(await siteOrigin(), plan.slug);
 
   const now = new Date();
   const codeState = (c: Code) =>
@@ -45,6 +48,18 @@ export default async function PlanPage({
           {' · '}<Link href={`/admin/upload?plan=${plan.id}`}>수정본 올리기</Link>
         </p>
       </div>
+
+      <section className="card share">
+        <h2>공유 주소</h2>
+        <div className="share-row">
+          <code>{url}</code>
+          <CopyButton text={url} label="주소 복사" />
+        </div>
+        <p className="muted">
+          고객에게 보내는 기본 주소입니다. 고객은 이 주소를 열고 접근 코드를 입력합니다. 수정본을 올려도 주소는 바뀌지 않습니다.
+          {plan.status !== 'active' && <> 지금은 <b>{STATUS[plan.status]}</b> 상태라 코드를 입력해도 열리지 않습니다.</>}
+        </p>
+      </section>
 
       {pending && /^[0-9a-f]{40}$/.test(pending) && (
         <PublishBanner slug={plan.slug} since={Number(t) || Date.now() - 30 * 60 * 1000} done={(versions ?? []).some((v) => v.commit_sha === pending)} />

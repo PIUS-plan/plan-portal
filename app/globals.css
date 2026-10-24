@@ -150,3 +150,23 @@ a.button {
 .banner.ok { background: var(--ok-bg); color: var(--ok); }
 .banner.wait { background: var(--warn-bg); color: var(--warn); }
 .banner.bad { background: var(--bad-bg); color: var(--bad); }
+
+/* GNB */
+.admin-left { display: flex; align-items: center; gap: 28px; min-width: 0; }
+.admin-nav { display: flex; gap: 20px; font-size: 13px; }
+.admin-nav a { text-decoration: none; color: var(--muted); white-space: nowrap; }
+.admin-nav a:hover { color: var(--ink); }
+
+/* 공유 주소 */
+.share-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.share-row code {
+  font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace; font-size: 14px;
+  padding: 8px 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; word-break: break-all;
+}
+.card.share > .muted { margin: 10px 0 0; }
+
+@media (max-width: 720px) {
+  .admin-bar { height: auto; padding: 10px 16px; flex-wrap: wrap; }
+  .admin-left { gap: 12px; flex-wrap: wrap; }
+  .admin-nav { gap: 14px; }
+}
