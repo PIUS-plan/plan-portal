@@ -15,7 +15,7 @@ function env(name: string) {
 /** 로그인한 관리자 세션으로 접근 (RLS 적용) */
 export async function sessionClient() {
   const store = await cookies();
-  return createServerClient(env('NEXT_PUBLIC_SUPABASE_URL'), env('NEXT_PUBLIC_SUPABASE_ANON_KEY'), {
+  return createServerClient(env('SUPABASE_URL'), env('SUPABASE_ANON_KEY'), {
     db: { schema: SCHEMA },
     cookies: {
       getAll: () => store.getAll(),
@@ -31,7 +31,7 @@ export async function sessionClient() {
 
 /** 서버 전용 (RLS 우회): 코드 검증, 기획서 파일 응답 */
 export function serviceClient() {
-  return createClient(env('NEXT_PUBLIC_SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'), {
+  return createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'), {
     db: { schema: SCHEMA },
     auth: { persistSession: false, autoRefreshToken: false },
   });

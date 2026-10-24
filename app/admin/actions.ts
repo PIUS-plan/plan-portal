@@ -83,7 +83,7 @@ export async function createCode(_prev: NewCode, form: FormData): Promise<NewCod
   if (error) return { error: error.message };
 
   const h = await headers();
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || `${h.get('x-forwarded-proto') ?? 'https'}://${h.get('host')}`;
+  const origin = process.env.SITE_URL || `${h.get('x-forwarded-proto') ?? 'https'}://${h.get('host')}`;
   revalidatePath(`/admin/plans/${planId}`);
   return { code, link: `${origin}/c/${code}` };
 }
