@@ -17,7 +17,9 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // 세션 갱신 + 토큰 검증 (비대칭 서명 키면 Auth 서버 왕복 없음)
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub;
   const isLogin = request.nextUrl.pathname === '/admin/login';
 
   if (!user && !isLogin) return NextResponse.redirect(new URL('/admin/login', request.url));

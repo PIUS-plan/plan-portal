@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
@@ -37,11 +38,16 @@ export function serviceClient() {
   });
 }
 
-/** 관리자면 세션 클라이언트와 사용자, 아니면 null */
-export async function getAdmin() {
+/**
+ * 관리자면 세션 클라이언트와 사용자, 아니면 null.
+ * getClaims 는 비대칭 서명 키면 토큰을 서버에서 바로 검증한다(Auth 왕복 없음).
+ * cache: 한 요청 안에서 레이아웃·페이지가 같이 불러도 한 번만 확인.
+ */
+export const getAdmin = cache(async () => {
   const supabase = await sessionClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims?.sub) return null;
   const { data: ok } = await supabase.rpc('is_admin');
-  return ok ? { supabase, user } : null;
-}
+  return ok ? { supabase, user: { id: claims.sub, email: (claims.email as string | undefined) ?? '' } } : null;
+});
