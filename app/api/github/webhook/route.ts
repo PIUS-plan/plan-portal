@@ -25,10 +25,17 @@ export async function POST(request: NextRequest) {
   if (event === 'ping') return NextResponse.json({ ok: true });
   if (event !== 'push') return NextResponse.json({ skipped: event });
 
-  const push = JSON.parse(body) as { ref: string; after: string; deleted?: boolean; repository: { name: string } };
+  const push = JSON.parse(body) as {
+    ref: string; after: string; created?: boolean; deleted?: boolean;
+    head_commit?: { message: string } | null; repository: { name: string };
+  };
   const repo = push.repository.name;
   if (push.ref !== 'refs/heads/main' || push.deleted || IGNORED.has(repo)) {
     return NextResponse.json({ skipped: `${repo} ${push.ref}` });
+  }
+  // plan-template 으로 저장소를 만들 때 생기는 첫 커밋(CLAUDE.md·.gitignore 뿐)은 빌드할 게 없음
+  if (push.created && push.head_commit?.message === 'Initial commit') {
+    return NextResponse.json({ skipped: `${repo} template initial commit` });
   }
 
   try {
