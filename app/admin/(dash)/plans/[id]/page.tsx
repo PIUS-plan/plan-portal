@@ -5,10 +5,11 @@ import { date, STATUS } from '@/lib/format';
 import { revokeCode, setCurrentVersion, updatePlan } from '../../../actions';
 import NewCodeForm from './NewCodeForm';
 import PublishBanner from './PublishBanner';
+import CodeCell from './CodeCell';
 import CopyButton from '../../../CopyButton';
 import { shareUrl, siteOrigin } from '@/lib/site';
 
-type Code = { id: string; code_hint: string; label: string | null; expires_at: string | null; revoked_at: string | null; created_at: string };
+type Code = { id: string; code_hint: string; code_enc?: string | null; label: string | null; expires_at: string | null; revoked_at: string | null; created_at: string };
 type Log = { id: number; ip: string | null; user_agent: string | null; created_at: string; access_codes: { label: string | null; code_hint: string } | null };
 
 export default async function PlanPage({
@@ -93,7 +94,7 @@ export default async function PlanPage({
                 const [cls, label] = codeState(c);
                 return (
                   <tr key={c.id}>
-                    <td className="mono">····-{c.code_hint}</td>
+                    <td><CodeCell id={c.id} hint={c.code_hint} canReveal={!!c.code_enc} /></td>
                     <td>{c.label ?? <span className="muted">—</span>}</td>
                     <td>{c.expires_at ? date(c.expires_at) : '없음'}</td>
                     <td><span className={`badge ${cls}`}>{label}</span></td>

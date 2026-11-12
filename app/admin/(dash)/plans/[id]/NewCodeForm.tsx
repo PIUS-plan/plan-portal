@@ -24,7 +24,7 @@ export default function NewCodeForm({ planId, disabled }: { planId: string; disa
       {state.error && <p className="error">{state.error}</p>}
       {state.code && (
         <div className="new-code">
-          <p className="muted">이 코드는 지금 한 번만 보입니다. 고객사에 전달해 주세요.</p>
+          <p className="muted">고객사에 전달해 주세요. 나중에도 아래 목록의 눈 아이콘으로 다시 볼 수 있습니다.</p>
           <div className="row"><code className="big">{state.code}</code><Copy text={state.code} /></div>
           <div className="row"><code>{state.link}</code><Copy text={state.link!} /></div>
         </div>

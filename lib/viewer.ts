@@ -1,5 +1,5 @@
 import 'server-only';
-import { createHash, randomInt } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomInt } from 'node:crypto';
 import { SignJWT, jwtVerify } from 'jose';
 import { serviceClient } from './supabase/server';
 
@@ -14,6 +14,27 @@ export function generateCode() {
 
 export const normalizeCode = (code: string) => code.toUpperCase().replace(/[^A-Z0-9]/g, '');
 export const hashCode = (code: string) => createHash('sha256').update(normalizeCode(code)).digest('hex');
+
+/* 관리자 화면에서 코드를 다시 보기 위한 암호화 보관. DB 만 유출돼서는 코드를 알 수 없음 */
+const codeKey = () => createHash('sha256').update('access-code:' + new TextDecoder().decode(secret())).digest();
+
+export function encryptCode(code: string) {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', codeKey(), iv);
+  const data = Buffer.concat([cipher.update(code, 'utf8'), cipher.final()]);
+  return [iv, cipher.getAuthTag(), data].map((b) => b.toString('base64url')).join('.');
+}
+
+export function decryptCode(enc: string): string | null {
+  try {
+    const [iv, tag, data] = enc.split('.').map((s) => Buffer.from(s, 'base64url'));
+    const decipher = createDecipheriv('aes-256-gcm', codeKey(), iv);
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
+  } catch {
+    return null;
+  }
+}
 
 /* 열람 쿠키: 기획서마다 따로, /p/<slug> 경로에만 전송 */
 const MAX_AGE = 60 * 60 * 24 * 7; // 7일

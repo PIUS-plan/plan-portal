@@ -170,3 +170,9 @@ a.button {
   .admin-left { gap: 12px; flex-wrap: wrap; }
   .admin-nav { gap: 14px; }
 }
+.code-cell { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.code-cell .mono { font-size: 13px; letter-spacing: 0.06em; }
+button.icon, span.icon { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--muted, #888); cursor: pointer; }
+button.icon:hover { background: rgba(127, 127, 127, 0.12); color: inherit; }
+span.icon { cursor: default; opacity: 0.4; }
+.error.small { font-size: 12px; margin: 0; }

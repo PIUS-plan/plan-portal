@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getAdmin, sessionClient } from '@/lib/supabase/server';
-import { generateCode, hashCode, normalizeCode } from '@/lib/viewer';
+import { decryptCode, encryptCode, generateCode, hashCode, normalizeCode } from '@/lib/viewer';
 import { GitHubError, IGNORED, ORG, commitFiles, createPlanRepo, repoExists } from '@/lib/github';
 import { PlanZipError, parsePlanZip, toSlug } from '@/lib/zip';
 import { siteOrigin } from '@/lib/site';
@@ -74,18 +74,28 @@ export async function createCode(_prev: NewCode, form: FormData): Promise<NewCod
   const expires_at = days > 0 ? new Date(Date.now() + days * 86400_000).toISOString() : null;
 
   const code = generateCode();
-  const { error } = await supabase.from('access_codes').insert({
+  const row = {
     plan_id: planId,
     code_hash: hashCode(code),
     code_hint: normalizeCode(code).slice(-4),
     label,
     expires_at,
     created_by: user.id,
-  });
+  };
+  let { error } = await supabase.from('access_codes').insert({ ...row, code_enc: encryptCode(code) });
+  // 0002_code_enc.sql 적용 전이면 컬럼이 없음 → 다시 보기 없이 저장
+  if (error?.code === 'PGRST204') ({ error } = await supabase.from('access_codes').insert(row));
   if (error) return { error: error.message };
 
   revalidatePath(`/admin/plans/${planId}`);
   return { code, link: `${await siteOrigin()}/c/${code}` };
+}
+
+export async function revealCode(codeId: string): Promise<{ code?: string; error?: string }> {
+  const { supabase } = await requireAdmin();
+  const { data } = await supabase.from('access_codes').select('code_enc').eq('id', codeId).maybeSingle();
+  const code = data?.code_enc ? decryptCode(data.code_enc) : null;
+  return code ? { code } : { error: '이 코드는 다시 볼 수 없습니다. 필요하면 폐기하고 새로 만들어 주세요.' };
 }
 
 export async function revokeCode(form: FormData) {
