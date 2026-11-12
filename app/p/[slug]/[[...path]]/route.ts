@@ -37,7 +37,7 @@ const TYPES: Record<string, string> = {
   pdf: 'application/pdf', mp4: 'video/mp4', webm: 'video/webm', map: 'application/json',
 };
 
-/* /p/<slug>/<path>: 열람 쿠키(또는 관리자 세션)를 확인하고 Storage 의 빌드 결과물을 그대로 응답 */
+/* /p/<slug>/<path>: 열람 쿠키(버전 미리보기는 관리자 세션)를 확인하고 Storage 의 빌드 결과물을 그대로 응답 */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string; path?: string[] }> }) {
   const { slug, path: segments = [] } = await params;
   const url = request.nextUrl;
@@ -78,8 +78,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       codeId = claims.cid;
     }
   }
-  // 관리자: 상태와 관계없이 미리보기 가능. 특정 버전 미리보기는 관리자만.
-  if ((!codeId || asked) && !(await getAdmin())) return deny();
+  // 공유 주소는 관리자도 코드가 필요. 관리자 미리보기는 /p/<slug>/~<versionId>/ 로만(상태와 관계없이).
+  if (asked ? !(await getAdmin()) : !codeId) return deny();
 
   let prefix = plan.prefix;
   if (asked) {

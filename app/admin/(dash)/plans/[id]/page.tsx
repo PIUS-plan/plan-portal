@@ -45,7 +45,7 @@ export default async function PlanPage({
         <p className="muted mono">
           {plan.slug}
           {plan.repo_url && <> · <a href={plan.repo_url} target="_blank" rel="noreferrer">GitHub</a></>}
-          {' · '}<a href={`/p/${plan.slug}/`} target="_blank" rel="noreferrer">미리보기</a>
+          {plan.current_version_id && <>{' · '}<a href={`/p/${plan.slug}/~${plan.current_version_id}/`} target="_blank" rel="noreferrer">미리보기</a></>}
           {' · '}<Link href={`/admin/upload?plan=${plan.id}`}>수정본 올리기</Link>
         </p>
       </div>
