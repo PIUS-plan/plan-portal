@@ -68,7 +68,8 @@ export default async function PlanPage({
 
       <section className="card">
         <h2>기본 정보</h2>
-        <form action={updatePlan} className="grid-form">
+        {/* 저장 후 React 가 폼을 처음 기본값으로 되돌리므로, 바뀐 값으로 다시 그리도록 key 를 updated_at 에 묶음 */}
+        <form key={plan.updated_at} action={updatePlan} className="grid-form">
           <input type="hidden" name="id" value={plan.id} />
           <label>제목<input name="title" defaultValue={plan.title} required /></label>
           <label>고객사<input name="client_name" defaultValue={plan.client_name ?? ''} placeholder="예: OO농산" /></label>
