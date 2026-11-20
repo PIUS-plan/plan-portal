@@ -1,9 +1,42 @@
 'use client';
 
 import { useActionState, useRef, useState } from 'react';
-import { uploadPlan, type UploadState } from '../../actions';
+import { prepareUpload, uploadPlan, type UploadState } from '../../actions';
 
 type Plan = { id: string; slug: string; title: string };
+
+const MAX_ZIP_MB = 50;
+
+/* zip 을 서버 함수로 보내면 Vercel 요청 한도(4.5MB)에 걸리므로 Storage 로 바로 올리고 경로만 넘긴다 */
+async function submit(prev: UploadState, form: FormData): Promise<UploadState> {
+  const file = form.get('zip');
+  if (!(file instanceof File) || file.size === 0) return { error: 'zip 파일을 선택해 주세요.' };
+  if (file.size > MAX_ZIP_MB * 1024 * 1024) {
+    return { error: `zip 파일은 ${MAX_ZIP_MB}MB 이하여야 합니다. node_modules·dist 폴더가 들어 있지 않은지 확인해 주세요.` };
+  }
+
+  const ready = await prepareUpload();
+  let stored = false;
+  if (ready.url && ready.path) {
+    const body = new FormData();
+    body.append('cacheControl', '60');
+    body.append('', file);
+    const res = await fetch(ready.url, { method: 'PUT', body, headers: { 'x-upsert': 'false' } }).catch(() => null);
+    stored = !!res?.ok;
+    if (!stored) console.error('storage upload failed', res?.status, await res?.text().catch(() => ''));
+  } else console.error('prepareUpload failed', ready.error);
+
+  // Storage 로 못 올렸으면 작은 zip 은 예전처럼 서버로 직접 보낸다
+  if (!stored) {
+    if (file.size <= 4 * 1024 * 1024) return uploadPlan(prev, form);
+    return { error: 'zip 파일을 올리지 못했습니다. 잠시 뒤 다시 시도하고, 계속되면 관리자에게 알려 주세요.' };
+  }
+
+  form.delete('zip');
+  form.set('upload', ready.path!);
+  form.set('file_name', file.name);
+  return uploadPlan(prev, form);
+}
 
 const slugFromName = (name: string) =>
   name.replace(/\.zip$/i, '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
@@ -12,7 +45,15 @@ export default function UploadForm({ plans, initialPlan }: { plans: Plan[]; init
   const [fileName, setFileName] = useState('');
   // 실패하면 React 가 폼을 비우므로(파일 선택 포함) 표시도 같이 비운다
   const [state, action, pending] = useActionState<UploadState, FormData>(async (prev, form) => {
-    const result = await uploadPlan(prev, form);
+    let result: UploadState;
+    try {
+      result = await submit(prev, form);
+    } catch (e) {
+      // 성공 시 redirect 는 그대로 던져서 이동시킨다
+      if (typeof e === 'object' && e && 'digest' in e && String((e as { digest: unknown }).digest).startsWith('NEXT_REDIRECT')) throw e;
+      console.error(e);
+      result = { error: '올리는 중 오류가 났습니다. 잠시 뒤 다시 시도하고, 계속되면 관리자에게 알려 주세요.' };
+    }
     setFileName('');
     return result;
   }, {});

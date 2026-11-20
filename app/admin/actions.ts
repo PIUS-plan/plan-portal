@@ -2,7 +2,8 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { getAdmin, sessionClient } from '@/lib/supabase/server';
+import { randomUUID } from 'node:crypto';
+import { BUCKET, getAdmin, serviceClient, sessionClient } from '@/lib/supabase/server';
 import { decryptCode, encryptCode, generateCode, hashCode, normalizeCode } from '@/lib/viewer';
 import { GitHubError, IGNORED, ORG, commitFiles, createPlanRepo, repoExists } from '@/lib/github';
 import { PlanZipError, parsePlanZip, toSlug } from '@/lib/zip';
@@ -111,18 +112,46 @@ export async function revokeCode(form: FormData) {
 
 export type UploadState = { error?: string };
 
-const MAX_ZIP = 4 * 1024 * 1024;
+/* zip 은 Vercel 함수 요청 한도(4.5MB)를 피해 브라우저에서 Storage 로 바로 올린다.
+   prepareUpload 가 관리자별 경로의 서명된 업로드 주소를 주고, uploadPlan 이 그 파일을 받아 처리한 뒤 지운다. */
+const uploadDir = (userId: string) => `uploads/${userId}/`;
+const DIRECT_MAX = 4 * 1024 * 1024;
+
+export async function prepareUpload(): Promise<{ path?: string; url?: string; error?: string }> {
+  const { user } = await requireAdmin();
+  const path = `${uploadDir(user.id)}${randomUUID()}.zip`;
+  const { data, error } = await serviceClient().storage.from(BUCKET).createSignedUploadUrl(path);
+  if (error) return { error: `업로드 준비에 실패했습니다: ${error.message}` };
+  return { path, url: data.signedUrl };
+}
 
 export async function uploadPlan(_prev: UploadState, form: FormData): Promise<UploadState> {
   const { supabase, user } = await requireAdmin();
 
+  let zip: Blob;
+  let fileName: string;
   const file = form.get('zip');
-  if (!(file instanceof File) || file.size === 0) return { error: 'zip 파일을 선택해 주세요.' };
-  if (file.size > MAX_ZIP) return { error: 'zip 파일은 4MB 이하여야 합니다. node_modules·dist 폴더가 들어 있지 않은지 확인해 주세요.' };
+  if (file instanceof File && file.size > 0) {
+    // Storage 업로드가 안 될 때의 예비 경로: 4MB 이하만 (요청 한도 4.5MB)
+    if (file.size > DIRECT_MAX) return { error: 'zip 파일을 올리지 못했습니다. 잠시 뒤 다시 시도해 주세요.' };
+    zip = file;
+    fileName = file.name;
+  } else {
+    const upload = String(form.get('upload') ?? '');
+    if (!/^uploads\/[0-9a-f-]+\/[0-9a-f-]+\.zip$/.test(upload) || !upload.startsWith(uploadDir(user.id))) {
+      return { error: 'zip 파일을 선택해 주세요.' };
+    }
+    const storage = serviceClient().storage.from(BUCKET);
+    const { data: blob } = await storage.download(upload);
+    await storage.remove([upload]);
+    if (!blob) return { error: '올린 zip 파일을 찾을 수 없습니다. 다시 시도해 주세요.' };
+    zip = blob;
+    fileName = String(form.get('file_name') ?? '').slice(0, 120) || 'zip';
+  }
 
   let parsed;
   try {
-    parsed = parsePlanZip(new Uint8Array(await file.arrayBuffer()));
+    parsed = parsePlanZip(new Uint8Array(await zip.arrayBuffer()));
   } catch (e) {
     if (e instanceof PlanZipError) return { error: e.message };
     throw e;
@@ -138,7 +167,7 @@ export async function uploadPlan(_prev: UploadState, form: FormData): Promise<Up
     if (target === 'new') {
       slug = toSlug(String(form.get('slug') ?? ''));
       if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug)) return { error: '주소 이름은 영문 소문자·숫자·하이픈(-)으로 2자 이상 입력해 주세요.' };
-      if (IGNORED.has(slug)) return { error: '쓸 수 없는 이름입니다. 다른 이름을 입력해 주세요.' };
+      if (IGNORED.has(slug) || slug === 'uploads') return { error: '쓸 수 없는 이름입니다. 다른 이름을 입력해 주세요.' };
 
       const { data: dup } = await supabase.from('plans').select('id').eq('slug', slug).maybeSingle();
       if (dup) return { error: `"${slug}" 기획서가 이미 있습니다. 수정본이라면 "기존 기획서 수정본"을 선택해 주세요.` };
@@ -159,7 +188,7 @@ export async function uploadPlan(_prev: UploadState, form: FormData): Promise<Up
       slug = plan.slug;
     }
 
-    sha = await commitFiles(slug, parsed.files, `기획서 업로드: ${memo || file.name} (${user.email})`);
+    sha = await commitFiles(slug, parsed.files, `기획서 업로드: ${memo || fileName} (${user.email})`);
   } catch (e) {
     if (e instanceof GitHubError) {
       console.error(e);
